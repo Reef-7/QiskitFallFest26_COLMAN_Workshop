@@ -33,7 +33,7 @@ pip install qiskit-nature pyscf qiskit-algorithms
 
 ## Notebooks Overview
 
-The project contains **8 notebooks** across two tracks:
+The project contains **9 notebooks** across two tracks:
 
 | Track | Goal |
 |-------|------|
@@ -128,7 +128,7 @@ All five Hello World notebooks teach the same 4-step Qiskit pattern, but differ 
 
 ## Track 2 — VQE Quantum Chemistry (BasQ Challenge)
 
-These **three notebooks** were created for the **BasQ Qiskit Fall Fest 2026** (Basque Quantum) by Benjamin Tirado. They introduce a more advanced application: computing molecular ground-state energies using a **hybrid quantum-classical algorithm**, first on a noiseless simulator, then on real IBM Quantum hardware.
+These **four notebooks** were created for the **BasQ Qiskit Fall Fest 2026** (Basque Quantum) by Benjamin Tirado. They introduce a more advanced application: computing molecular ground-state energies using a **hybrid quantum-classical algorithm**, first on a noiseless simulator, then on real IBM Quantum hardware.
 
 ### The Core Workflow
 
@@ -175,14 +175,14 @@ These **three notebooks** were created for the **BasQ Qiskit Fall Fest 2026** (B
 
 ---
 
-### 8. `VQEHardware_BasqueQuantum(BasQ)_Challenge1_Blank.ipynb` ⭐ *new*
+### 8. `VQEHardware_BasqueQuantum(BasQ)_Challenge1_blank.ipynb`
 **Purpose:** Workshop starter notebook — runs VQE on a **real IBM Quantum device**.
 
 - Same chemistry workflow as the simulator notebook (PySCF → Jordan-Wigner → UCCSD ansatz), but the execution layer is replaced with the IBM Quantum Runtime.
-- **Authentication:** Includes a cell to save your IBM Quantum API key via `QiskitRuntimeService.save_account(...)` and a backend selector that picks the least-busy real QPU (or lets you specify one like `ibm_basquecountry`).
-- **Hardware-aware transpilation:** Uses `generate_preset_pass_manager` with `optimization_level=3` to compile the UCCSD circuit to the device's native gate set and qubit connectivity. Prints gate counts and circuit depth so students can see the overhead.
-- **Error suppression:** Configures `EstimatorV2` with `resilience_level=1` (readout-error mitigation) and dynamical decoupling (XY4) to reduce the impact of decoherence.
-- **Optimizer:** Switches from SLSQP to **SPSA** (Simultaneous Perturbation Stochastic Approximation) — the standard choice for noisy hardware because it estimates gradients from only two circuit evaluations per step, making it robust to shot noise.
+- **Authentication:** Includes a cell to save your IBM Quantum API key via `QiskitRuntimeService.save_account(...)` and a backend selector that picks the least-busy real QPU (or lets you target a specific machine like `ibm_basquecountry`).
+- **Hardware-aware transpilation:** Uses `generate_preset_pass_manager` with `optimization_level=3` to compile the UCCSD circuit to the device's native gate set and qubit connectivity. Prints gate counts and circuit depth so students can see the overhead introduced by SWAP routing.
+- **Error suppression:** Configures `EstimatorV2` from `qiskit_ibm_runtime` with `resilience_level=1` (readout-error mitigation) and dynamical decoupling (XY4 sequence) to reduce the impact of decoherence.
+- **Optimizer:** Switches from SLSQP to **SPSA** — the standard choice for noisy hardware because it estimates gradients from only two circuit evaluations per step, making it robust to shot noise.
 - **Results plot:** Bar chart comparing Hartree-Fock baseline, VQE hardware result, and exact diagonalization. Includes a dashed chemical-accuracy band (±1.6×10⁻³ Ha) for easy visual assessment.
 - All code cells are present but **outputs are cleared** — intended for students to run.
 
@@ -196,13 +196,31 @@ These **three notebooks** were created for the **BasQ Qiskit Fall Fest 2026** (B
 
 ---
 
+### 9. `VQEHardware_BasqueQuantum(BasQ)_Challenge1_Completed.ipynb` *(completed reference)*
+**Purpose:** Fully executed reference version of the hardware VQE notebook, showing real quantum device results.
+
+- Identical structure to `_blank`, but all cell outputs are pre-rendered including install logs, molecule parameters, transpiled circuit diagram, and results.
+- **Ran on:** `ibm_fez` (156-qubit IBM Quantum Eagle processor), selected automatically as the least-busy device.
+- **Transpiled circuit:** depth 158, gate counts `{'rz': 91, 'sx': 82, 'cz': 49, 'x': 12}` — significantly deeper than the abstract UCCSD circuit due to SWAP routing on the heavy-hex topology.
+- **VQE execution strategy:** Instead of running a standard SPSA optimization loop, uses a **grid-search approach via a single IBM Quantum `Batch`**: 30 random parameter sets are sampled, all circuits are sent to the hardware in one batch job, and the lowest-energy result is taken as the VQE answer. This is more practical for real hardware since it controls the total number of circuits submitted.
+- **Results:**
+  - Exact ground-state energy (classical): **−1.137306 Ha**
+  - Best VQE energy found (hardware): **−0.675530 Ha**
+  - Absolute error: **4.62×10⁻¹ Ha** — not within chemical accuracy
+  - `Within chemical accuracy: False`
+- The large error (~0.46 Ha) reflects genuine hardware noise at this circuit depth on current devices. This is the expected outcome and the starting point for the challenge — students are encouraged to apply stronger error mitigation (`resilience_level=2/3`), gate twirling, or resource reduction strategies to close this gap.
+- Useful for seeing what real hardware output looks like before running the blank version.
+
+---
+
 ### VQE Chemistry — Quick Comparison
 
-| Notebook | Execution Target | Optimizer | Error Mitigation | Account Needed? | Outputs Saved? |
+| Notebook | Execution Target | VQE Strategy | Error Mitigation | Account Needed? | Outputs Saved? |
 |---|---|---|---|---|---|
-| `VQESimulator_..._Blank` | Local (noiseless `StatevectorEstimator`) | SLSQP | None | No | No |
-| `VQESimulator_..._Completed` | Local (noiseless `StatevectorEstimator`) | SLSQP | None | No | **Yes** |
-| `VQEHardware_..._Blank` | **Real IBM QPU** (`EstimatorV2`) | **SPSA** | DD + resilience_level=1 | **Yes** | No |
+| `VQESimulator_..._Blank` | Local (noiseless `StatevectorEstimator`) | SLSQP optimizer | None | No | No |
+| `VQESimulator_..._Completed` | Local (noiseless `StatevectorEstimator`) | SLSQP optimizer | None | No | **Yes** |
+| `VQEHardware_..._blank` | **Real IBM QPU** (`EstimatorV2`) | SPSA optimizer | DD + resilience_level=1 | **Yes** | No |
+| `VQEHardware_..._Completed` | **Real IBM QPU** — `ibm_fez` | Grid search (Batch, 30 pts) | DD + resilience_level=1 | **Yes** | **Yes** |
 
 ---
 
