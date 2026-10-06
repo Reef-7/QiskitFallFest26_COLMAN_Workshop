@@ -33,7 +33,7 @@ pip install qiskit-nature pyscf qiskit-algorithms
 
 ## Notebooks Overview
 
-The project contains **7 notebooks** across two tracks:
+The project contains **8 notebooks** across two tracks:
 
 | Track | Goal |
 |-------|------|
@@ -128,7 +128,7 @@ All five Hello World notebooks teach the same 4-step Qiskit pattern, but differ 
 
 ## Track 2 — VQE Quantum Chemistry (BasQ Challenge)
 
-These two notebooks were created for the **BasQ Qiskit Fall Fest 2026** (Basque Quantum) by Benjamin Tirado. They introduce a more advanced application: computing molecular ground-state energies using a **hybrid quantum-classical algorithm**.
+These **three notebooks** were created for the **BasQ Qiskit Fall Fest 2026** (Basque Quantum) by Benjamin Tirado. They introduce a more advanced application: computing molecular ground-state energies using a **hybrid quantum-classical algorithm**, first on a noiseless simulator, then on real IBM Quantum hardware.
 
 ### The Core Workflow
 
@@ -175,6 +175,37 @@ These two notebooks were created for the **BasQ Qiskit Fall Fest 2026** (Basque 
 
 ---
 
+### 8. `VQEHardware_BasqueQuantum(BasQ)_Challenge1_Blank.ipynb` ⭐ *new*
+**Purpose:** Workshop starter notebook — runs VQE on a **real IBM Quantum device**.
+
+- Same chemistry workflow as the simulator notebook (PySCF → Jordan-Wigner → UCCSD ansatz), but the execution layer is replaced with the IBM Quantum Runtime.
+- **Authentication:** Includes a cell to save your IBM Quantum API key via `QiskitRuntimeService.save_account(...)` and a backend selector that picks the least-busy real QPU (or lets you specify one like `ibm_basquecountry`).
+- **Hardware-aware transpilation:** Uses `generate_preset_pass_manager` with `optimization_level=3` to compile the UCCSD circuit to the device's native gate set and qubit connectivity. Prints gate counts and circuit depth so students can see the overhead.
+- **Error suppression:** Configures `EstimatorV2` with `resilience_level=1` (readout-error mitigation) and dynamical decoupling (XY4) to reduce the impact of decoherence.
+- **Optimizer:** Switches from SLSQP to **SPSA** (Simultaneous Perturbation Stochastic Approximation) — the standard choice for noisy hardware because it estimates gradients from only two circuit evaluations per step, making it robust to shot noise.
+- **Results plot:** Bar chart comparing Hartree-Fock baseline, VQE hardware result, and exact diagonalization. Includes a dashed chemical-accuracy band (±1.6×10⁻³ Ha) for easy visual assessment.
+- All code cells are present but **outputs are cleared** — intended for students to run.
+
+> **Requires:** IBM Quantum account + API key, `qiskit-nature`, `pyscf`, `qiskit-algorithms`, `qiskit-ibm-runtime`
+
+**Challenge extensions (described in the notebook):**
+- **Beginner:** Compute the PES of HeH⁺ on hardware and compare to the exact classical curve.
+- **Intermediate:** Scale to LiH/BeH₂ with resource reduction (tapering, alternative mappings, frozen core).
+- **Advanced:** Explore stronger mitigation — ZNE (`resilience_level=2`), PEC (`resilience_level=3`), gate twirling — and plot accuracy vs. mitigation level.
+- **Optimizer tuning:** Warm-start hardware VQE from simulator-optimized parameters; compare SPSA, COBYLA, NELDER_MEAD.
+
+---
+
+### VQE Chemistry — Quick Comparison
+
+| Notebook | Execution Target | Optimizer | Error Mitigation | Account Needed? | Outputs Saved? |
+|---|---|---|---|---|---|
+| `VQESimulator_..._Blank` | Local (noiseless `StatevectorEstimator`) | SLSQP | None | No | No |
+| `VQESimulator_..._Completed` | Local (noiseless `StatevectorEstimator`) | SLSQP | None | No | **Yes** |
+| `VQEHardware_..._Blank` | **Real IBM QPU** (`EstimatorV2`) | **SPSA** | DD + resilience_level=1 | **Yes** | No |
+
+---
+
 ## What You'll Learn
 
 ### Hello World Track
@@ -194,6 +225,10 @@ These two notebooks were created for the **BasQ Qiskit Fall Fest 2026** (Basque 
 - How **VQE** combines a quantum estimator with a classical optimizer
 - What **chemical accuracy** (1.6 × 10⁻³ Ha ≈ 1 kcal/mol) means in practice
 - How to compare VQE results to exact classical diagonalization
+- How to **transpile** a chemistry circuit for a real device's native gate set and qubit connectivity
+- Why **SPSA** is preferred over gradient-based optimizers on noisy hardware
+- How to configure **error suppression** (dynamical decoupling) and **error mitigation** (resilience levels) via `EstimatorV2`
+- How hardware noise shifts the VQE energy upward and how mitigation partially corrects it
 
 ---
 
